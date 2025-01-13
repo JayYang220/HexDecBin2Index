@@ -3,6 +3,8 @@
 This app is used to convert HEX and DEC to BIN, and mark the corresponding bit index on BIN.
 When referencing some datasheets, it can quickly and conveniently verify specific bits.
 
+![image](pic/sample.png)
+
 ### Version 1.1.1
 - When there is a mark error, the conversion can still work, but the mark will not be applied.
 - Add some comments to the code.

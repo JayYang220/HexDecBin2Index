@@ -1,7 +1,7 @@
 import tkinter as tk
 import traceback
 
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 debug = False
 
 def debug_print(*args, **kwargs):
@@ -76,7 +76,7 @@ class App(tk.Tk):
     """
     def __init__(self):
         super().__init__()
-        self.title(f"HEX, DEC to BIN and IDX V{__version__}")
+        self.title(f"HEX, DEC, BIN convert to IDX V{__version__}")
         width = 1200
         height = 200
         x = (self.winfo_screenwidth() - width) / 2
@@ -87,7 +87,7 @@ class App(tk.Tk):
 
         self.title_font = ("Consolas", 10)
         self.data_font = ("Consolas", 8)
-        self.mode = "all"
+        self.mode = ""
 
         self.result_frame_list = []
         self.label_class = [LabelList(), LabelList(), LabelList()]
@@ -99,86 +99,97 @@ class App(tk.Tk):
         self.bottom_frame = tk.Frame(self.upper_frame)
         self.bottom_frame.pack(fill=tk.BOTH)
 
-        self.hex_label = tk.Label(self.upper_center_frame, text="  This app is used to convert HEX or DEC to BIN and IDX.                       ", font=self.title_font)
+        self.hex_label = tk.Label(self.upper_center_frame, text="  This app is used to convert HEX, DEC, BIN to IDX.                       ", font=self.title_font)
         self.hex_label.grid(row=0, column=0, columnspan=3, sticky="w")
 
-        self.hex_label = tk.Label(self.upper_center_frame, text="  Enter HEX Number: ", font=self.title_font)
-        self.hex_label.grid(row=1, column=0, sticky="w")
-
+        tk.Label(self.upper_center_frame, text="  Enter HEX Number: ", font=self.title_font).grid(row=1, column=0, sticky="w")
         self.hex_entry = tk.Entry(self.upper_center_frame, width=40)
         self.hex_entry.grid(row=1, column=1, sticky="w")
-        self.hex_entry.bind("<KeyRelease>", self.convertHex)
+        self.hex_entry.bind("<KeyRelease>", lambda event: self.start_convert(event, "hex"))
 
-        self.dec_label = tk.Label(self.upper_center_frame, text="  Enter DEC Number: ", font=self.title_font)
-        self.dec_label.grid(row=2, column=0, sticky="w")
-
+        tk.Label(self.upper_center_frame, text="  Enter DEC Number: ", font=self.title_font).grid(row=2, column=0, sticky="w")
         self.dec_entry = tk.Entry(self.upper_center_frame, width=40)
         self.dec_entry.grid(row=2, column=1, sticky="w")
-        self.dec_entry.bind("<KeyRelease>", self.convertDec)
+        self.dec_entry.bind("<KeyRelease>", lambda event: self.start_convert(event, "dec"))
 
-        self.mark_start_label = tk.Label(self.upper_center_frame, text="  Mark Start Index: ", font=self.title_font)
-        self.mark_start_label.grid(row=3, column=0, sticky="w")
+        tk.Label(self.upper_center_frame, text="  Enter BIN Number: ", font=self.title_font).grid(row=3, column=0, sticky="w")
+        self.bin_entry = tk.Entry(self.upper_center_frame, width=40)
+        self.bin_entry.grid(row=3, column=1, sticky="w")
+        self.bin_entry.bind("<KeyRelease>", lambda event: self.start_convert(event, "bin"))
 
+        tk.Label(self.upper_center_frame, text="  Mark Start Index: ", font=self.title_font).grid(row=4, column=0, sticky="w")
         self.mark_start_entry = tk.Entry(self.upper_center_frame, width=5)
-        self.mark_start_entry.grid(row=3, column=1, sticky="w")
-        self.mark_start_entry.bind("<KeyRelease>", self.convertHex)
+        self.mark_start_entry.grid(row=4, column=1, sticky="w")
+        self.mark_start_entry.bind("<KeyRelease>", self.start_convert)
 
-        self.mark_end_label = tk.Label(self.upper_center_frame, text="  Mark End Index: ", font=self.title_font)
-        self.mark_end_label.grid(row=4, column=0, sticky="w")
-
+        tk.Label(self.upper_center_frame, text="  Mark End Index: ", font=self.title_font).grid(row=5, column=0, sticky="w")
         self.mark_end_entry = tk.Entry(self.upper_center_frame, width=5)
-        self.mark_end_entry.grid(row=4, column=1, sticky="w")
-        self.mark_end_entry.bind("<KeyRelease>", self.convertHex)
+        self.mark_end_entry.grid(row=5, column=1, sticky="w")
+        self.mark_end_entry.bind("<KeyRelease>", self.start_convert)
 
         self.warning_label = tk.Label(self.upper_center_frame, text="", font=self.title_font, fg="#AA0000")
-        self.warning_label.grid(row=5, column=1, sticky="w")
+        self.warning_label.grid(row=6, column=1, sticky="w")
         self.warning_msg = []
 
-    def check_num(self):
-        flag = False
-        self.warning_label.config(text="")
+    def is_input_num_ok(self):
+        flag = True
+        mode = self.mode
         try:
-            if self.hex_entry.get() != "":
+            if mode == "hex" and self.hex_entry.get() != "":
+                self.dec_entry.delete(0, tk.END)
+                self.bin_entry.delete(0, tk.END)
                 if int(self.hex_entry.get().lower().replace("0x", ""), 16) < 0:
-                    self.warning_msg.append("HEX number must be positive")
-                    flag = True
-
+                    self.warning_msg.append("HEX number must be positive.")
+                    flag = False
         except Exception as e:
             debug_print(e)
-            self.warning_msg.append("Invalid HEX number")
-            flag = True
+            self.warning_msg.append("Invalid HEX number.")
+            flag = False
 
         try:
-            if self.dec_entry.get() != "":
+            if mode == "dec" and self.dec_entry.get() != "":
+                self.hex_entry.delete(0, tk.END)
+                self.bin_entry.delete(0, tk.END)
                 if int(self.dec_entry.get()) < 0:
-                    self.warning_msg.append("DEC number must be positive")
-                    flag = True
-
+                    self.warning_msg.append("DEC number must be positive.")
+                    flag = False
         except Exception as e:
             debug_print(e)
-            self.warning_msg.append("Invalid DEC number")
-            flag = True
+            self.warning_msg.append("Invalid DEC number.")
+            flag = False
+
+        try:
+            if mode == "bin" and self.bin_entry.get() != "":
+                self.hex_entry.delete(0, tk.END)
+                self.dec_entry.delete(0, tk.END)
+                if int(self.bin_entry.get(), 2) < 0:
+                    self.warning_msg.append("BIN number must be positive.")
+                    flag = False
+        except Exception as e:
+            debug_print(e)
+            self.warning_msg.append("Invalid BIN number.")
+            flag = False
 
         return flag
     
-    def check_mark_idx(self):
-        flag = False
+    def is_mark_idx_ok(self):
+        flag = True
         if self.mark_start_entry.get() != "" or self.mark_end_entry.get() != "":
             try:
                 if int(self.mark_start_entry.get()) < 0:
-                    self.warning_msg.append("Invalid start index")
-                    flag = True
+                    self.warning_msg.append("Start index must be positive.")
+                    flag = False
             except:
-                self.warning_msg.append("Invalid start index")
-                flag = True
+                self.warning_msg.append("Invalid start index.")
+                flag = False
 
             try:
                 if int(self.mark_end_entry.get()) < 0:
-                    self.warning_msg.append("Invalid end index")
-                    flag = True
+                    self.warning_msg.append("End index must be positive.")
+                    flag = False
             except:
-                self.warning_msg.append("Invalid end index")
-                flag = True
+                self.warning_msg.append("Invalid end index.")
+                flag = False
 
         return flag
 
@@ -199,46 +210,57 @@ class App(tk.Tk):
                 return True, start_idx, end_idx
         except:
             return False, None, None
-
-    def convertDec(self, event=None):
+        
+    def start_convert(self, event=None, mode=None):
+        if mode:
+            self.mode = mode
+        self.warning_label.config(text="")
         self.warning_msg = []
-        
-        check_num = self.check_num()
-        self.check_mark_idx()
-        self.show_warning()
-        if check_num:
-            return
-        
-        dec_num = int(self.dec_entry.get())
-        hex_num = hex(dec_num)[2:]
-        self.hex_entry.delete(0, tk.END)
-        self.hex_entry.insert(0, f"0x{hex_num.upper()}")
-        self.convertHex(event, hex_num)
+        self.convert()
 
-    def convertHex(self, event=None, hex_num=None):
-        if not hex_num:
-            self.warning_msg = []
-            check_num = self.check_num()
-            self.check_mark_idx()
-            self.show_warning()
-            if check_num:
-                return
-
-        try:
-            if hex_num is None:
+    def convert(self, hex_num=None, dec_num=None, bin_num=None):
+        is_input_num_ok = self.is_input_num_ok()
+        if is_input_num_ok:
+            if self.mode == "dec":
+                dec_num = int(self.dec_entry.get())
+                hex_num = hex(dec_num)[2:]
+                bin_num = bin(dec_num)[2:]
+                self.hex_entry.delete(0, tk.END)
+                self.hex_entry.insert(0, f"0x{hex_num.upper()}")
+                self.bin_entry.delete(0, tk.END)
+                self.bin_entry.insert(0, bin_num)
+            elif self.mode == "hex":
                 hex_num = self.hex_entry.get().lower().replace("0x", "")
+                dec_num = int(hex_num, 16)
+                bin_num = bin(dec_num)[2:]
+                self.dec_entry.delete(0, tk.END)
+                self.dec_entry.insert(0, dec_num)
+                self.bin_entry.delete(0, tk.END)
+                self.bin_entry.insert(0, bin_num)
+            elif self.mode == "bin":
+                bin_num = self.bin_entry.get()
+                hex_num = hex(int(bin_num, 2))[2:]
+                dec_num = int(hex_num, 16)
+                self.hex_entry.delete(0, tk.END)
+                self.hex_entry.insert(0, f"0x{hex_num.upper()}")
+                self.dec_entry.delete(0, tk.END)
+                self.dec_entry.insert(0, dec_num)
+
             debug_print("Hex: ", hex_num)
-
-            int_num = int(hex_num, 16)
-            debug_print("Dec: ", int_num)
-
-            self.dec_entry.delete(0, tk.END)
-            self.dec_entry.insert(0, int_num)
+            debug_print("Dec: ", dec_num)
+            debug_print("Bin: ", bin_num)
 
             # convert hex to bin and fill leading zero
-            binary = bin(int_num)[2:].zfill(len(hex_num) * 4)  
-            debug_print("Bin: ", binary)  # output bin
+            binary = bin_num.zfill(len(hex_num) * 4)
+            print("binary: ", binary)
 
+        self.is_mark_idx_ok()
+        self.show_warning()
+
+        if not is_input_num_ok:
+            return
+        
+        try:
             result_hex = " HEX: "
             result_binary = " BIN: "
             result_index = " IDX: "
@@ -259,12 +281,12 @@ class App(tk.Tk):
             if not valid:
                 mark_start_idx = -1
                 mark_end_idx = -1
-                self.mode = "all"
             else:
+                print("len(binary): ", len(binary))
+                print("mark_start_idx: ", mark_start_idx)
+                print("mark_end_idx: ", mark_end_idx)
                 mark_start_idx = len(binary) - mark_start_idx - 1
                 mark_end_idx = len(binary) - mark_end_idx - 1
-                self.mode = "unit"
-            
             debug_print("mark_valid: ", valid)
             debug_print("mark_start_idx: ", mark_start_idx)
             debug_print("mark_end_idx: ", mark_end_idx)

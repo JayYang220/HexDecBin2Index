@@ -5,6 +5,9 @@ When referencing some datasheets, it can quickly and conveniently verify specifi
 
 ![image](pic/sample.png)
 
+### Version 1.2.0
+- Add BIN input function
+
 ### Version 1.1.1
 - When there is a mark error, the conversion can still work, but the mark will not be applied.
 - Add some comments to the code.

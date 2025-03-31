@@ -1,22 +1,30 @@
 import tkinter as tk
 import traceback
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 debug = False
 
+# for debug print
 def debug_print(*args, **kwargs):
     if debug:
         print(*args, **kwargs)
 
-class LabelList:
+class ResultLabelList:
     """
-    This class is used to record the label list.
+    This class is used to prevent the performance waste caused by repeatedly creating label.
+    It can create, modify, display, hide the label.
+    Only create label when it is the first time required.
+    When label is created, only need to modify the text, color or hide it.
     """
     def __init__(self):
         self.frame = None
+        # Prefix text
         self.__start_label = None
+        # Suffix text
         self.__end_label = None
+        # Middle labels (number)
         self.label_list = []
+        # Record the index of the last label
         self.last_idx = -1
 
     @property
@@ -25,6 +33,7 @@ class LabelList:
     
     @start_label.setter
     def start_label(self, label: tk.Label):
+        # If the label is not created, create it.
         if self.__start_label is None:
             self.__start_label = label
             self.__start_label.pack(side=tk.LEFT, fill=tk.X)
@@ -35,15 +44,18 @@ class LabelList:
 
     @end_label.setter
     def end_label(self, label: tk.Label):
+        # If the label is not created, create it.
         if self.__end_label is None:
             self.__end_label = label
             self.__end_label.pack(side=tk.LEFT, fill=tk.X)
 
     def add(self, idx, **kwargs):
         self.last_idx = idx
+        # If the label is not created, create it.
         if len(self.label_list) <= idx:
             self.label_list.append(tk.Label(**kwargs))
         else:
+            # If the label is created, modify the text.
             if "fg" in kwargs:
                 self.label_list[idx].config(fg=kwargs["fg"])
             if "bg" in kwargs:
@@ -77,63 +89,100 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(f"HEX, DEC, BIN convert to IDX V{__version__}")
+
+        # Auto center
         width = 1200
         height = 200
         x = (self.winfo_screenwidth() - width) / 2
         y = (self.winfo_screenheight() - height) / 2
         self.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
-
+        
+        # Color template
         self.default_bg_color = self.cget("bg")
+        self.hex_bg_mark_color = "Yellow"
 
-        self.title_font = ("Consolas", 10)
-        self.data_font = ("Consolas", 8)
+        self.bin_default_fg_color = "black"
+        self.bin_mark_fg_color = "#EE0000"
+
+        self.idx_default_fg_color = "black"
+        self.idx_mark_fg_color = "#0000FF"
+
+        self.warning_fg_color = "#AA0000"
+
+        # Font template
+        self.content_font = ("Consolas", 10)
+        self.result_font = ("Consolas", 8)
+
+        # For record the mode of the input, like "hex", "dec", "bin".
         self.mode = ""
 
         self.result_frame_list = []
-        self.label_class = [LabelList(), LabelList(), LabelList()]
+        self.result_list = [ResultLabelList(), ResultLabelList(), ResultLabelList()]
 
-        self.upper_frame = tk.Frame(self)
-        self.upper_frame.pack(fill=tk.BOTH)
-        self.upper_center_frame = tk.Frame(self.upper_frame)
-        self.upper_center_frame.pack()
-        self.bottom_frame = tk.Frame(self.upper_frame)
+        self.init_widgets()
+
+    def init_widgets(self):
+        # Frame
+        self.top_frame = tk.Frame(self)
+        self.top_frame.pack(fill=tk.BOTH)
+        self.upper_frame = tk.Frame(self.top_frame)
+        self.upper_frame.pack()
+        self.bottom_frame = tk.Frame(self.top_frame)
         self.bottom_frame.pack(fill=tk.BOTH)
 
-        self.hex_label = tk.Label(self.upper_center_frame, text="  This app is used to convert HEX, DEC, BIN to IDX.                       ", font=self.title_font)
+        # Description
+        self.hex_label = tk.Label(self.upper_frame, text="  This app is used to convert HEX, DEC, BIN to IDX.                       ", font=self.content_font)
         self.hex_label.grid(row=0, column=0, columnspan=3, sticky="w")
-
-        tk.Label(self.upper_center_frame, text="  Enter HEX Number: ", font=self.title_font).grid(row=1, column=0, sticky="w")
-        self.hex_entry = tk.Entry(self.upper_center_frame, width=40)
+        
+        # Input Area
+        tk.Label(self.upper_frame, text="  Enter HEX Number: ", font=self.content_font).grid(row=1, column=0, sticky="w")
+        self.hex_entry = tk.Entry(self.upper_frame, width=40)
         self.hex_entry.grid(row=1, column=1, sticky="w")
         self.hex_entry.bind("<KeyRelease>", lambda event: self.start_convert(event, "hex"))
 
-        tk.Label(self.upper_center_frame, text="  Enter DEC Number: ", font=self.title_font).grid(row=2, column=0, sticky="w")
-        self.dec_entry = tk.Entry(self.upper_center_frame, width=40)
+        tk.Label(self.upper_frame, text="  Enter DEC Number: ", font=self.content_font).grid(row=2, column=0, sticky="w")
+        self.dec_entry = tk.Entry(self.upper_frame, width=40)
         self.dec_entry.grid(row=2, column=1, sticky="w")
         self.dec_entry.bind("<KeyRelease>", lambda event: self.start_convert(event, "dec"))
 
-        tk.Label(self.upper_center_frame, text="  Enter BIN Number: ", font=self.title_font).grid(row=3, column=0, sticky="w")
-        self.bin_entry = tk.Entry(self.upper_center_frame, width=40)
+        tk.Label(self.upper_frame, text="  Enter BIN Number: ", font=self.content_font).grid(row=3, column=0, sticky="w")
+        self.bin_entry = tk.Entry(self.upper_frame, width=40)
         self.bin_entry.grid(row=3, column=1, sticky="w")
         self.bin_entry.bind("<KeyRelease>", lambda event: self.start_convert(event, "bin"))
 
-        tk.Label(self.upper_center_frame, text="  Mark Start Index: ", font=self.title_font).grid(row=4, column=0, sticky="w")
-        self.mark_start_entry = tk.Entry(self.upper_center_frame, width=5)
+        tk.Label(self.upper_frame, text="  Mark Start Index: ", font=self.content_font).grid(row=4, column=0, sticky="w")
+        self.mark_start_entry = tk.Entry(self.upper_frame, width=5)
         self.mark_start_entry.grid(row=4, column=1, sticky="w")
         self.mark_start_entry.bind("<KeyRelease>", self.start_convert)
 
-        tk.Label(self.upper_center_frame, text="  Mark End Index: ", font=self.title_font).grid(row=5, column=0, sticky="w")
-        self.mark_end_entry = tk.Entry(self.upper_center_frame, width=5)
+        tk.Label(self.upper_frame, text="  Mark End Index: ", font=self.content_font).grid(row=5, column=0, sticky="w")
+        self.mark_end_entry = tk.Entry(self.upper_frame, width=5)
         self.mark_end_entry.grid(row=5, column=1, sticky="w")
         self.mark_end_entry.bind("<KeyRelease>", self.start_convert)
 
-        self.warning_label = tk.Label(self.upper_center_frame, text="", font=self.title_font, fg="#AA0000")
+        # Warning label, display all collected warning messages in self.warning_msg and then display them.
+        self.warning_label = tk.Label(self.upper_frame, text="", font=self.content_font, fg=self.warning_fg_color)
         self.warning_label.grid(row=6, column=1, sticky="w")
         self.warning_msg = []
 
     def is_input_num_ok(self):
+        # Check input number
         flag = True
         mode = self.mode
+        
+        if self.hex_entry.get() == "" and self.dec_entry.get() == "" and self.bin_entry.get() == "":
+            self.warning_msg.append("Please enter a number.")
+            return False
+        elif mode == "dec" and self.dec_entry.get() == "":
+            self.warning_msg.append("Please enter a number.")
+            return False
+        elif mode == "hex" and self.hex_entry.get() == "":
+            self.warning_msg.append("Please enter a number.")
+            return False
+        elif mode == "bin" and self.bin_entry.get() == "":
+            self.warning_msg.append("Please enter a number.")
+            return False
+
         try:
             if mode == "hex" and self.hex_entry.get() != "":
                 self.dec_entry.delete(0, tk.END)
@@ -173,6 +222,7 @@ class App(tk.Tk):
         return flag
     
     def is_mark_idx_ok(self):
+        # Check input mark index
         flag = True
         if self.mark_start_entry.get() != "" or self.mark_end_entry.get() != "":
             try:
@@ -194,13 +244,12 @@ class App(tk.Tk):
         return flag
 
     def show_warning(self):
+        # Display all collected warning messages in self.warning_msg.
         self.warning_label.config(text="\n".join(self.warning_msg))
 
-    def get_mark_idx(self):
+    def check_mark_idx_reverse(self):
+        # When start_idx and end_idx are reversed, adjust them.
         try:
-            if self.mark_start_entry.get() == "" and self.mark_end_entry.get() == "":
-                return False, None, None
-
             start_idx = int(self.mark_start_entry.get())
             end_idx = int(self.mark_end_entry.get())
 
@@ -212,13 +261,21 @@ class App(tk.Tk):
             return False, None, None
         
     def start_convert(self, event=None, mode=None):
+        # All inputs will trigger this function
+        # Use the mode parameter to determine which input box triggered it
+        # When entering a mark, mode=None, so self.mode will not be set, and the last triggered mode will be used
         if mode:
             self.mode = mode
+
+        # Clear warnings
         self.warning_label.config(text="")
         self.warning_msg = []
+
+        # Conversion
         self.convert()
 
     def convert(self, hex_num=None, dec_num=None, bin_num=None):
+        # Check input, Convert, Display
         is_input_num_ok = self.is_input_num_ok()
         if is_input_num_ok:
             if self.mode == "dec":
@@ -252,12 +309,15 @@ class App(tk.Tk):
 
             # convert hex to bin and fill leading zero
             binary = bin_num.zfill(len(hex_num) * 4)
-            print("binary: ", binary)
+            debug_print("binary: ", binary)
 
+        # do not return, because when mark index is invalid, should still show the result or warning.
         self.is_mark_idx_ok()
         self.show_warning()
 
         if not is_input_num_ok:
+            for result in self.result_list:
+                result.clear()
             return
         
         try:
@@ -265,29 +325,22 @@ class App(tk.Tk):
             result_binary = " BIN: "
             result_index = " IDX: "
 
-            if len(binary) <= 10:
-                space = 2
-            elif len(binary) <= 100:
-                space = 3
-            elif len(binary) <= 1000:
-                space = 4
-            else:
-                space = 5
-
+            # adjust space of hex, bin, idx
+            space = len(str(len(binary))) + 1
             num = 0
 
             # mark color
-            valid, mark_start_idx, mark_end_idx = self.get_mark_idx()
-            if not valid:
+            is_mark_valid, mark_start_idx, mark_end_idx = self.check_mark_idx_reverse()
+            if not is_mark_valid:
                 mark_start_idx = -1
                 mark_end_idx = -1
             else:
-                print("len(binary): ", len(binary))
-                print("mark_start_idx: ", mark_start_idx)
-                print("mark_end_idx: ", mark_end_idx)
+                debug_print("len(binary): ", len(binary))
+                debug_print("mark_start_idx: ", mark_start_idx)
+                debug_print("mark_end_idx: ", mark_end_idx)
                 mark_start_idx = len(binary) - mark_start_idx - 1
                 mark_end_idx = len(binary) - mark_end_idx - 1
-            debug_print("mark_valid: ", valid)
+            debug_print("mark_valid: ", is_mark_valid)
             debug_print("mark_start_idx: ", mark_start_idx)
             debug_print("mark_end_idx: ", mark_end_idx)
 
@@ -295,22 +348,22 @@ class App(tk.Tk):
             if len(self.result_frame_list) < 1:
                 self.result_frame_list.append(tk.Frame(self.bottom_frame))
             else:
-                self.label_class[0].end_label.pack_forget()
-            self.label_class[0].start_label = tk.Label(self.result_frame_list[0], text=result_hex, font=self.data_font)
+                self.result_list[0].end_label.pack_forget()
+            self.result_list[0].start_label = tk.Label(self.result_frame_list[0], text=result_hex, font=self.result_font)
             for i in range(len(binary)):
                 if (i + 1) % 4 == 0:
                     mark_start_byte = i // 4 * 4
                     mark_end_byte = (i // 4 + 1) * 4 - 1
-                    bg = "yellow" if mark_start_idx >= mark_start_byte and mark_end_idx <= mark_end_byte else self.default_bg_color
+                    bg = self.hex_bg_mark_color if mark_start_idx >= mark_start_byte and mark_end_idx <= mark_end_byte else self.default_bg_color
                     if bg:
-                        self.label_class[0].add(idx=i, master=self.result_frame_list[0], text=f"{hex_num[num].upper():>{space-1}}", font=self.data_font, bg=bg)
+                        self.result_list[0].add(idx=i, master=self.result_frame_list[0], text=f"{hex_num[num].upper():>{space-1}}", font=self.result_font, bg=bg)
                     else:
-                        self.label_class[0].add(idx=i, master=self.result_frame_list[0], text=f"{hex_num[num].upper():>{space-1}}", font=self.data_font)
+                        self.result_list[0].add(idx=i, master=self.result_frame_list[0], text=f"{hex_num[num].upper():>{space-1}}", font=self.result_font)
                     num += 1
                 else:
-                    self.label_class[0].add(idx=i, master=self.result_frame_list[0], text=f"{(space -1) * ' '}", font=self.data_font)
-            self.label_class[0].end_label = tk.Label(self.result_frame_list[0], text="", font=self.data_font)
-            self.label_class[0].complete()
+                    self.result_list[0].add(idx=i, master=self.result_frame_list[0], text=f"{(space -1) * ' '}", font=self.result_font)
+            self.result_list[0].end_label = tk.Label(self.result_frame_list[0], text="", font=self.result_font)
+            self.result_list[0].complete()
             debug_print("")
 
             for i in range(len(binary)):
@@ -321,30 +374,31 @@ class App(tk.Tk):
             if len(self.result_frame_list) < 2:
                 self.result_frame_list.append(tk.Frame(self.bottom_frame))
             else:
-                self.label_class[1].end_label.pack_forget()
-            self.label_class[1].start_label = tk.Label(self.result_frame_list[1], text=result_binary, font=self.data_font)
+                self.result_list[1].end_label.pack_forget()
+            self.result_list[1].start_label = tk.Label(self.result_frame_list[1], text=result_binary, font=self.result_font)
+            
             for i in range(len(binary)):
-                fg = "#EE0000" if mark_start_idx >= i and mark_end_idx <= i else "black"
-                self.label_class[1].add(idx=i, master=self.result_frame_list[1], text=f"{binary[i]:>{space-1}}", font=self.data_font, fg=fg)
+                fg = self.bin_mark_fg_color if mark_start_idx >= i and mark_end_idx <= i else self.bin_default_fg_color
+                self.result_list[1].add(idx=i, master=self.result_frame_list[1], text=f"{binary[i]:>{space-1}}", font=self.result_font, fg=fg)
                 debug_print(f"{binary[i]:>{space}}", end="")
 
-            self.label_class[1].end_label = tk.Label(self.result_frame_list[1], text=" ", font=self.data_font)
-            self.label_class[1].complete()
+            self.result_list[1].end_label = tk.Label(self.result_frame_list[1], text=" ", font=self.result_font)
+            self.result_list[1].complete()
             debug_print("")
 
             # display index
             if len(self.result_frame_list) < 3:
                 self.result_frame_list.append(tk.Frame(self.bottom_frame))
             else:
-                self.label_class[2].end_label.pack_forget()
-            self.label_class[2].start_label = tk.Label(self.result_frame_list[2], text=result_index, font=self.data_font)
+                self.result_list[2].end_label.pack_forget()
+            self.result_list[2].start_label = tk.Label(self.result_frame_list[2], text=result_index, font=self.result_font)
             for i in range(len(binary)):
                 index = len(binary) - i - 1
-                fg = "#0000FF" if mark_start_idx >= i and mark_end_idx <= i else "black"
-                self.label_class[2].add(idx=i, master=self.result_frame_list[2], text=f"{index:>{space-1}}", font=self.data_font, fg=fg)
+                fg = self.idx_mark_fg_color if mark_start_idx >= i and mark_end_idx <= i else self.idx_default_fg_color
+                self.result_list[2].add(idx=i, master=self.result_frame_list[2], text=f"{index:>{space-1}}", font=self.result_font, fg=fg)
                 debug_print(f"{index:>{space}}", end="")
-            self.label_class[2].end_label = tk.Label(self.result_frame_list[2], text=" ", font=self.data_font)
-            self.label_class[2].complete()
+            self.result_list[2].end_label = tk.Label(self.result_frame_list[2], text=" ", font=self.result_font)
+            self.result_list[2].complete()
 
             for frame in self.result_frame_list:
                 frame.pack(fill=tk.BOTH)

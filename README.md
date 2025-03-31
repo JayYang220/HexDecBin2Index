@@ -15,7 +15,7 @@ When referencing some IC datasheets, it can quickly and conveniently verify spec
 #### Usage demonstration:
 ![image](pic/edit.png)
 
-#### When input error occurs:
+#### Number error occurs:
 ![image](pic/warning.png)
 
 ### Version Information

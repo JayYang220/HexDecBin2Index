@@ -1,4 +1,4 @@
-# HexDec2BinIndex
+# HexDecBin2Index
 
 This app is used to convert HEX and DEC to BIN, and mark the corresponding bit index on BIN.
 When referencing some IC datasheets, it can quickly and conveniently verify specific bits.

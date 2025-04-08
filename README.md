@@ -20,6 +20,9 @@ When referencing some IC datasheets, it can quickly and conveniently verify spec
 
 ### Version Information
 
+#### 1.2.2
+- Format code according to flake8
+
 #### 1.2.1
 - Added code comments and fixed exception handling
 

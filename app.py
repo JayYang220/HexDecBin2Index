@@ -1,13 +1,15 @@
 import tkinter as tk
 import traceback
 
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 debug = False
+
 
 # for debug print
 def debug_print(*args, **kwargs):
     if debug:
         print(*args, **kwargs)
+
 
 class ResultLabelList:
     """
@@ -30,7 +32,7 @@ class ResultLabelList:
     @property
     def start_label(self):
         return self.__start_label
-    
+
     @start_label.setter
     def start_label(self, label: tk.Label):
         # If the label is not created, create it.
@@ -82,6 +84,7 @@ class ResultLabelList:
         for label in self.label_list:
             label.pack_forget()
 
+
 class App(tk.Tk):
     """
     main window.
@@ -96,7 +99,7 @@ class App(tk.Tk):
         x = (self.winfo_screenwidth() - width) / 2
         y = (self.winfo_screenheight() - height) / 2
         self.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
-        
+
         # Color template
         self.default_bg_color = self.cget("bg")
         self.hex_bg_mark_color = "Yellow"
@@ -131,9 +134,10 @@ class App(tk.Tk):
         self.bottom_frame.pack(fill=tk.BOTH)
 
         # Description
-        self.hex_label = tk.Label(self.upper_frame, text="  This app is used to convert HEX, DEC, BIN to IDX.                       ", font=self.content_font)
+        self.hex_label = tk.Label(self.upper_frame,
+                                  text="  This app is used to convert HEX, DEC, BIN to IDX.                       ", font=self.content_font)
         self.hex_label.grid(row=0, column=0, columnspan=3, sticky="w")
-        
+
         # Input Area
         tk.Label(self.upper_frame, text="  Enter HEX Number: ", font=self.content_font).grid(row=1, column=0, sticky="w")
         self.hex_entry = tk.Entry(self.upper_frame, width=40)
@@ -169,7 +173,7 @@ class App(tk.Tk):
         # Check input number
         flag = True
         mode = self.mode
-        
+
         if self.hex_entry.get() == "" and self.dec_entry.get() == "" and self.bin_entry.get() == "":
             self.warning_msg.append("Please enter a number.")
             return False
@@ -220,7 +224,7 @@ class App(tk.Tk):
             flag = False
 
         return flag
-    
+
     def is_mark_idx_ok(self):
         # Check input mark index
         flag = True
@@ -229,7 +233,7 @@ class App(tk.Tk):
                 if int(self.mark_start_entry.get()) < 0:
                     self.warning_msg.append("Start index must be positive.")
                     flag = False
-            except:
+            except Exception:
                 self.warning_msg.append("Invalid start index.")
                 flag = False
 
@@ -237,7 +241,7 @@ class App(tk.Tk):
                 if int(self.mark_end_entry.get()) < 0:
                     self.warning_msg.append("End index must be positive.")
                     flag = False
-            except:
+            except Exception:
                 self.warning_msg.append("Invalid end index.")
                 flag = False
 
@@ -257,9 +261,9 @@ class App(tk.Tk):
                 return True, end_idx, start_idx
             else:
                 return True, start_idx, end_idx
-        except:
+        except Exception:
             return False, None, None
-        
+
     def start_convert(self, event=None, mode=None):
         # All inputs will trigger this function
         # Use the mode parameter to determine which input box triggered it
@@ -319,7 +323,7 @@ class App(tk.Tk):
             for result in self.result_list:
                 result.clear()
             return
-        
+
         try:
             result_hex = " HEX: "
             result_binary = " BIN: "
@@ -356,9 +360,11 @@ class App(tk.Tk):
                     mark_end_byte = (i // 4 + 1) * 4 - 1
                     bg = self.hex_bg_mark_color if mark_start_idx >= mark_start_byte and mark_end_idx <= mark_end_byte else self.default_bg_color
                     if bg:
-                        self.result_list[0].add(idx=i, master=self.result_frame_list[0], text=f"{hex_num[num].upper():>{space-1}}", font=self.result_font, bg=bg)
+                        self.result_list[0].add(idx=i, master=self.result_frame_list[0],
+                                                text=f"{hex_num[num].upper():>{space-1}}", font=self.result_font, bg=bg)
                     else:
-                        self.result_list[0].add(idx=i, master=self.result_frame_list[0], text=f"{hex_num[num].upper():>{space-1}}", font=self.result_font)
+                        self.result_list[0].add(idx=i, master=self.result_frame_list[0],
+                                                text=f"{hex_num[num].upper():>{space-1}}", font=self.result_font)
                     num += 1
                 else:
                     self.result_list[0].add(idx=i, master=self.result_frame_list[0], text=f"{(space -1) * ' '}", font=self.result_font)
@@ -376,7 +382,7 @@ class App(tk.Tk):
             else:
                 self.result_list[1].end_label.pack_forget()
             self.result_list[1].start_label = tk.Label(self.result_frame_list[1], text=result_binary, font=self.result_font)
-            
+
             for i in range(len(binary)):
                 fg = self.bin_mark_fg_color if mark_start_idx >= i and mark_end_idx <= i else self.bin_default_fg_color
                 self.result_list[1].add(idx=i, master=self.result_frame_list[1], text=f"{binary[i]:>{space-1}}", font=self.result_font, fg=fg)
@@ -406,9 +412,10 @@ class App(tk.Tk):
         except Exception as e:
             debug_print(e)
             debug_print(traceback.format_exc())
-        
+
         # update window size
         self.geometry("")
+
 
 if __name__ == "__main__":
     app = App()
